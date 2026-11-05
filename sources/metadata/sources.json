@@ -1,0 +1,61 @@
+[
+  {
+    "id": "thb_rueckmeldung",
+    "type": "web",
+    "title": "Rückmeldung",
+    "url": "https://www.th-brandenburg.de/studium/information-und-beratung/studierendensekretariat/rueckmeldung/",
+    "category": "student_administration",
+    "language": "de",
+    "priority": "high"
+  },
+
+  {
+    "id": "thb_rahmentermine",
+    "type": "pdf",
+    "title": "Rahmentermine",
+    "file": "sources/pdf/Websteite_Rahmentermine_SoSe26-SoSe28.pdf",
+    "category": "semester_dates",
+    "language": "de",
+    "priority": "high"
+  },
+
+  {
+    "id": "thb_studiengaenge",
+    "type": "pdf",
+    "title": "Studiengänge",
+    "file": "sources/pdf/Studiengänge.pdf",
+    "category": "study_programs",
+    "language": "de",
+    "priority": "high"
+  },
+
+  {
+    "id": "thb_module",
+    "type": "pdf",
+    "title": "Modulbeschreibung",
+    "file": "sources/pdf/Modulhandbuch-FBI-Praesenz-2025-Nr2_SoSe2026.pdf",
+    "category": "modules",
+    "language": "de",
+    "priority": "very_high"
+  },
+
+  {
+    "id": "thb_studierendensekretariat",
+    "type": "web",
+    "title": "Studierendensekretariat FAQ",
+    "url": "https://www.th-brandenburg.de/studium/information-und-beratung/studierendensekretariat/faq/",
+    "category": "general",
+    "language": "de",
+    "priority": "very_high"
+  },
+
+  {
+    "id": "thb_pruefungsamt",
+    "type": "web",
+    "title": "Prüfungsamt FAQ",
+    "url": "https://www.th-brandenburg.de/studium/pruefungen-und-termine/pruefungsaemter/faq/",
+    "category": "exams",
+    "language": "de",
+    "priority": "very_high"
+  }
+]

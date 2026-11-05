@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+__pycache__.zip
+.pytest_cache/
+venv/
+.venv/
+
+# Local configuration (may contain machine-specific settings)
+.env
+
+# Generated data (rebuild with prepare_sources.py / ingest.py)
+vectorstore/
+sources/cache/
+clean_documents/
+
+# THB documents are not redistributed; download them yourself (see README)
+sources/pdf/*
+!sources/pdf/.gitkeep
+
+# Legacy prototype / scratch
+9dim _gpt/
+data/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

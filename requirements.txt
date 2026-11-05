@@ -1,0 +1,22 @@
+# Web app
+fastapi==0.136.1
+uvicorn==0.46.0
+slowapi==0.1.9
+Jinja2==3.1.6
+httpx==0.28.1
+pydantic==2.13.4
+python-dotenv==1.2.2
+
+# RAG
+langchain-core==0.3.86
+langchain-chroma==0.2.3
+langchain-huggingface==0.2.0
+langchain-ollama==0.3.3
+langchain-text-splitters==0.3.11
+chromadb==0.6.3
+sentence-transformers==5.4.1
+
+# Source preparation
+pypdf==6.11.0
+beautifulsoup4==4.14.3
+requests==2.33.1

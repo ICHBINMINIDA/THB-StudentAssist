@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>THB StudentAssist</title>
+<style>
+  :root {
+    --bg: #f3f5f8;
+    --surface: #ffffff;
+    --surface-2: #f7f8fa;
+    --border: #e1e5eb;
+    --text: #1c2430;
+    --muted: #64707f;
+    --brand: #1d3557;
+    --brand-contrast: #ffffff;
+    --accent: #2a7f75;
+    --user-bubble: #1d3557;
+    --user-text: #ffffff;
+    --error: #b42318;
+    --error-bg: #fef3f2;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f141b;
+      --surface: #161c25;
+      --surface-2: #1d2530;
+      --border: #2a3441;
+      --text: #e6eaf0;
+      --muted: #97a3b4;
+      --brand: #6f9ad6;
+      --brand-contrast: #0f141b;
+      --accent: #5cc2b3;
+      --user-bubble: #2b4a75;
+      --user-text: #ffffff;
+      --error: #fda29b;
+      --error-bg: #3a1a17;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+  }
+
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 16px;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 4px 14px;
+  }
+  header h1 { margin: 0; font-size: 1.25rem; color: var(--brand); }
+  header p { margin: 2px 0 0; font-size: 0.85rem; color: var(--muted); }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-ghost:hover { background: var(--surface-2); }
+
+  #chat {
+    flex: 1;
+    overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .msg { display: flex; flex-direction: column; max-width: 85%; }
+  .msg.user { align-self: flex-end; align-items: flex-end; }
+  .msg.bot { align-self: flex-start; }
+
+  .bubble {
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    overflow-wrap: anywhere;
+  }
+  .user .bubble {
+    background: var(--user-bubble);
+    color: var(--user-text);
+    border-bottom-right-radius: 4px;
+    white-space: pre-wrap;
+  }
+  .bot .bubble {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+  .bot .bubble p { margin: 0 0 8px; }
+  .bot .bubble p:last-child, .bot .bubble ul:last-child, .bot .bubble ol:last-child { margin-bottom: 0; }
+  .bot .bubble ul, .bot .bubble ol { margin: 4px 0 8px; padding-left: 22px; }
+  .bot .bubble a { color: var(--accent); }
+  .bot .bubble code { background: var(--border); padding: 1px 5px; border-radius: 5px; font-size: 0.9em; }
+  .bubble.error { background: var(--error-bg); color: var(--error); border-color: var(--error); }
+
+  sup.cite a {
+    text-decoration: none;
+    font-size: 0.72em;
+    font-weight: 600;
+    padding: 0 3px;
+    border-radius: 4px;
+    background: var(--border);
+    color: var(--text) !important;
+  }
+
+  .sources { margin-top: 6px; font-size: 0.8rem; color: var(--muted); }
+  .sources ol { margin: 4px 0 0; padding-left: 20px; }
+  .sources a { color: var(--accent); }
+  .sources li:target { background: var(--surface-2); border-radius: 4px; }
+
+  .typing span {
+    display: inline-block; width: 7px; height: 7px; margin-right: 3px;
+    border-radius: 50%; background: var(--muted);
+    animation: blink 1.2s infinite ease-in-out both;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.15s; }
+  .typing span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes blink { 0%, 80%, 100% { opacity: 0.25; } 40% { opacity: 1; } }
+
+  .suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .suggestions button {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .suggestions button:hover { border-color: var(--brand); }
+
+  form {
+    margin-top: 12px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px;
+  }
+  form:focus-within { border-color: var(--brand); }
+  textarea {
+    flex: 1;
+    resize: none;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    padding: 6px 8px;
+    max-height: 160px;
+  }
+  #send {
+    background: var(--brand);
+    color: var(--brand-contrast);
+    border: none;
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  #send:disabled { opacity: 0.5; cursor: not-allowed; }
+  .hint { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--muted); padding: 6px 6px 0; }
+
+  @media (max-width: 600px) {
+    .app { padding: 10px; }
+    .msg { max-width: 95%; }
+    header p { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>THB StudentAssist</h1>
+      <p>Antworten auf Basis offizieller THB-Quellen · Deutsch · English · العربية</p>
+    </div>
+    <button class="btn-ghost" id="newChat" type="button" title="Verlauf löschen">Neuer Chat</button>
+  </header>
+
+  <main id="chat" aria-live="polite"></main>
+
+  <form id="form">
+    <textarea id="input" rows="1" maxlength="{{ max_length }}"
+              placeholder="Schreibe deine Frage …" aria-label="Deine Frage"></textarea>
+    <button id="send" type="submit">Senden</button>
+  </form>
+  <div class="hint">
+    <span>Enter zum Senden · Shift+Enter für neue Zeile</span>
+    <span id="counter">0/{{ max_length }}</span>
+  </div>
+</div>
+
+<script>
+(() => {
+  const MAX_LEN = {{ max_length }};
+  const chat = document.getElementById("chat");
+  const form = document.getElementById("form");
+  const input = document.getElementById("input");
+  const send = document.getElementById("send");
+  const counter = document.getElementById("counter");
+  let busy = false;
+  let msgCounter = 0;
+
+  const SUGGESTIONS = [
+    "Wann ist die Rückmeldung für das Wintersemester?",
+    "Wie melde ich mich von einer Prüfung ab?",
+    "Wie viele ECTS hat das Modul Datenbanken?",
+    "How do I get an enrollment certificate?",
+  ];
+
+  // ── Safe mini-Markdown renderer ─────────────────────────────────────────
+  // Everything is HTML-escaped first; only a fixed set of tags is produced.
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  function inline(text, msgId) {
+    let s = escapeHtml(text);
+    s = s.replace(/`([^`]+)`/g, "<code>$1</code>");
+    s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    s = s.replace(/(^|[^*])\*([^*\s][^*]*)\*/g, "$1<em>$2</em>");
+    s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+                  '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    s = s.replace(/(^|[\s(])(https?:\/\/[^\s<)]+[^\s<).,;:])/g,
+                  '$1<a href="$2" target="_blank" rel="noopener noreferrer">$2</a>');
+    s = s.replace(/\[(\d{1,2})\]/g, `<sup class="cite"><a href="#src-${msgId}-$1">$1</a></sup>`);
+    return s;
+  }
+
+  function renderMarkdown(md, msgId) {
+    const lines = md.replace(/\r/g, "").split("\n");
+    let html = "", list = null, para = [];
+    const flushPara = () => { if (para.length) { html += `<p>${para.map(l => inline(l, msgId)).join("<br>")}</p>`; para = []; } };
+    const closeList = () => { if (list) { html += `</${list}>`; list = null; } };
+
+    for (const raw of lines) {
+      const line = raw.trimEnd();
+      const ul = line.match(/^\s*[-*•]\s+(.*)/);
+      const ol = line.match(/^\s*\d+[.)]\s+(.*)/);
+      const h = line.match(/^#{1,6}\s+(.*)/);
+      if (ul || ol) {
+        flushPara();
+        const type = ul ? "ul" : "ol";
+        if (list !== type) { closeList(); html += `<${type}>`; list = type; }
+        html += `<li>${inline((ul || ol)[1], msgId)}</li>`;
+      } else if (h) {
+        flushPara(); closeList();
+        html += `<p><strong>${inline(h[1], msgId)}</strong></p>`;
+      } else if (!line.trim()) {
+        flushPara(); closeList();
+      } else {
+        closeList();
+        para.push(line);
+      }
+    }
+    flushPara(); closeList();
+    return html;
+  }
+
+  // ── DOM helpers ─────────────────────────────────────────────────────────
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+
+  const nearBottom = () => chat.scrollHeight - chat.scrollTop - chat.clientHeight < 80;
+  const scrollDown = (force) => { if (force || nearBottom()) chat.scrollTop = chat.scrollHeight; };
+
+  function addUser(text) {
+    const m = el("div", "msg user");
+    m.appendChild(el("div", "bubble", text));
+    chat.appendChild(m);
+    scrollDown(true);
+  }
+
+  function addBot() {
+    const id = ++msgCounter;
+    const m = el("div", "msg bot");
+    const bubble = el("div", "bubble");
+    bubble.innerHTML = '<span class="typing" aria-label="Antwort wird erstellt"><span></span><span></span><span></span></span>';
+    m.appendChild(bubble);
+    chat.appendChild(m);
+    scrollDown(true);
+    return { id, m, bubble };
+  }
+
+  function safeUrl(url) {
+    return typeof url === "string" && (/^https?:\/\//.test(url) || /^\/(?!\/)/.test(url)) ? url : null;
+  }
+
+  function renderSources(container, msgId, sources) {
+    if (!sources || !sources.length) return;
+    const box = el("div", "sources");
+    box.appendChild(el("strong", "", "Quellen"));
+    const ol = el("ol");
+    for (const s of sources) {
+      const li = el("li");
+      li.id = `src-${msgId}-${s.n}`;
+      li.value = s.n;
+      const label = s.title + (s.page ? ` (S. ${s.page})` : "");
+      const url = safeUrl(s.url);
+      if (url) {
+        const a = el("a", "", label);
+        a.href = url; a.target = "_blank"; a.rel = "noopener noreferrer";
+        li.appendChild(a);
+      } else {
+        li.textContent = label;
+      }
+      ol.appendChild(li);
+    }
+    box.appendChild(ol);
+    container.appendChild(box);
+  }
+
+  function showError(bubble, message) {
+    bubble.classList.add("error");
+    bubble.textContent = message;
+  }
+
+  function welcome() {
+    chat.replaceChildren();
+    const { bubble, m } = addBot();
+    bubble.innerHTML = renderMarkdown(
+      "Hallo! Ich bin **THB StudentAssist**. Frag mich zu Rückmeldung, Prüfungen, Modulen, Terminen oder Studiengängen der TH Brandenburg.", 0);
+    const sugg = el("div", "suggestions");
+    for (const q of SUGGESTIONS) {
+      const b = el("button", "", q);
+      b.type = "button";
+      b.addEventListener("click", () => { sugg.remove(); ask(q); });
+      sugg.appendChild(b);
+    }
+    m.appendChild(sugg);
+  }
+
+  // ── Networking ──────────────────────────────────────────────────────────
+  async function ask(question) {
+    if (busy) return;
+    busy = true;
+    send.disabled = true;
+    document.querySelectorAll(".suggestions").forEach(s => s.remove());
+
+    addUser(question);
+    const { id, m, bubble } = addBot();
+    let text = "";
+    let pending = false;
+
+    const paint = () => {
+      pending = false;
+      bubble.innerHTML = renderMarkdown(text, id);
+      scrollDown();
+    };
+
+    try {
+      const res = await fetch("/ask/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
+
+      if (!res.ok) {
+        let msg = `Fehler ${res.status}.`;
+        if (res.status === 429) msg = "Zu viele Anfragen. Bitte warte einen Moment.";
+        else { try { msg = (await res.json()).error || msg; } catch (_) {} }
+        showError(bubble, msg);
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let nl;
+        while ((nl = buffer.indexOf("\n")) >= 0) {
+          const line = buffer.slice(0, nl).trim();
+          buffer = buffer.slice(nl + 1);
+          if (!line) continue;
+          const ev = JSON.parse(line);
+          if (ev.type === "token") {
+            text += ev.text;
+            if (!pending) { pending = true; requestAnimationFrame(paint); }
+          } else if (ev.type === "done") {
+            paint();
+            renderSources(m, id, ev.sources);
+            scrollDown();
+          } else if (ev.type === "error") {
+            showError(bubble, ev.message);
+          }
+        }
+      }
+      if (!text && !bubble.classList.contains("error")) showError(bubble, "Keine Antwort erhalten.");
+    } catch (err) {
+      showError(bubble, "Verbindung zum Server fehlgeschlagen. Bitte versuche es erneut.");
+    } finally {
+      busy = false;
+      send.disabled = !input.value.trim();
+      input.focus();
+    }
+  }
+
+  // ── Input handling ──────────────────────────────────────────────────────
+  function autosize() {
+    input.style.height = "auto";
+    input.style.height = Math.min(input.scrollHeight, 160) + "px";
+    counter.textContent = `${input.value.length}/${MAX_LEN}`;
+    send.disabled = busy || !input.value.trim();
+  }
+
+  input.addEventListener("input", autosize);
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
+      e.preventDefault();
+      form.requestSubmit();
+    }
+  });
+
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    const q = input.value.trim();
+    if (!q || busy) return;
+    input.value = "";
+    autosize();
+    ask(q);
+  });
+
+  document.getElementById("newChat").addEventListener("click", async () => {
+    if (busy) return;
+    try { await fetch("/clear", { method: "POST" }); } catch (_) {}
+    welcome();
+    input.focus();
+  });
+
+  welcome();
+  autosize();
+  input.focus();
+})();
+</script>
+</body>
+</html>
