@@ -11,6 +11,21 @@
 
 > **Disclaimer:** This is an independent student project. It is not affiliated with or endorsed by the Technische Hochschule Brandenburg. Always verify deadlines and fees on the official THB website.
 
+<p align="center">
+  <img src="docs/screenshots/answer-semesterticket.png" alt="THB StudentAssist answering a question about the Semesterticket refund, with links and cited sources" width="760">
+</p>
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/welcome.png" alt="Start screen with suggested questions"></td>
+    <td width="50%"><img src="docs/screenshots/answer-exmatrikulation.png" alt="Answer about exmatriculation after the final exam, with numbered citations"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Start screen with suggested questions</sub></td>
+    <td align="center"><sub>Cited answer: each statement links to its source</sub></td>
+  </tr>
+</table>
+
 ---
 
 ## Features

@@ -130,7 +130,9 @@
   }
 
   .sources { margin-top: 6px; font-size: 0.8rem; color: var(--muted); }
-  .sources ol { margin: 4px 0 0; padding-left: 20px; }
+  .sources ol { margin: 4px 0 0; padding-left: 0; list-style: none; }
+  .sources li { margin: 2px 0; }
+  .sources .ref { font-weight: 600; color: var(--text); }
   .sources a { color: var(--accent); }
   .sources li:target { background: var(--surface-2); border-radius: 4px; }
 
@@ -326,8 +328,15 @@
     const ol = el("ol");
     for (const s of sources) {
       const li = el("li");
-      li.id = `src-${msgId}-${s.n}`;
-      li.value = s.n;
+      const refs = Array.isArray(s.refs) && s.refs.length ? s.refs : [s.n];
+      li.id = `src-${msgId}-${refs[0]}`;
+      // Extra anchors so every citation number ([2], [3], ...) jumps to this entry.
+      for (const r of refs.slice(1)) {
+        const anchor = el("span");
+        anchor.id = `src-${msgId}-${r}`;
+        li.appendChild(anchor);
+      }
+      li.appendChild(el("span", "ref", `[${refs.join(", ")}] `));
       const label = s.title + (s.page ? ` (S. ${s.page})` : "");
       const url = safeUrl(s.url);
       if (url) {

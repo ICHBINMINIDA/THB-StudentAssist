@@ -195,11 +195,26 @@ def retrieve(question: str, history: list[dict]) -> list[Document]:
 
 
 def select_sources(answer: str, docs: list[Document], lang: str) -> list[dict]:
-    """Show only the sources the model actually cited."""
+    """
+    Show only the sources the model actually cited. Several chunks of the same
+    FAQ entry / PDF page are merged into one entry listing all their numbers.
+    """
     if FALLBACK[lang][:40] in answer:
         return []
     cited = {int(n) for n in re.findall(r"\[(\d+)\]", answer)}
-    return [source_entry(doc, i) for i, doc in enumerate(docs, start=1) if i in cited]
+
+    merged: dict[tuple, dict] = {}
+    for i, doc in enumerate(docs, start=1):
+        if i not in cited:
+            continue
+        entry = source_entry(doc, i)
+        key = (entry["title"], entry["url"])
+        if key in merged:
+            merged[key]["refs"].append(i)
+        else:
+            entry["refs"] = [i]
+            merged[key] = entry
+    return list(merged.values())
 
 
 def _prepare(question: str, session_id: str):
@@ -283,5 +298,6 @@ if __name__ == "__main__":
             print("\nSources:")
             for src in result["sources"]:
                 page_info = f" (page {src['page']})" if src.get("page") else ""
-                print(f"  [{src['n']}] {src['title']}{page_info}: {src['url']}")
+                refs = ", ".join(map(str, src["refs"]))
+                print(f"  [{refs}] {src['title']}{page_info}: {src['url']}")
         print()
