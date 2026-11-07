@@ -8,9 +8,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # CPU-only PyTorch: the app only runs the small embedding model; the chat model
-# is served by Ollama / vLLM in its own container. Saves ~2 GB of CUDA wheels.
+# is served by Ollama / vLLM elsewhere. Saves ~2 GB of CUDA wheels.
+# pip is upgraded first: the pip bundled with the base image rejects packages on
+# the PyTorch index whose file names differ in case (Jinja2 vs jinja2).
 COPY requirements.txt .
-RUN pip install torch --index-url https://download.pytorch.org/whl/cpu \
+RUN pip install --upgrade pip \
+ && pip install torch --index-url https://download.pytorch.org/whl/cpu \
  && pip install -r requirements.txt
 
 COPY . .
