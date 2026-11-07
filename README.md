@@ -195,7 +195,7 @@ prompt), so differences come from the model alone.
 ```bash
 pip install -r requirements.txt
 python -m benchmark.run_benchmark \
-    --models llama3.1-8b=llama3.1,qwen2.5-7b=qwen2.5:7b,gemma3-4b=gemma3:4b \
+    --models gemma3-4b=gemma3:4b,llama3.1-8b=llama3.1:latest,gemma3-12b=gemma3:12b,gemma3-27b=gemma3:27b \
     --api-key "$LITELLM_MASTER_KEY" --ollama-url http://localhost:18080 --repeats 3
 ```
 
