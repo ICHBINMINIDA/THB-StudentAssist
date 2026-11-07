@@ -10,18 +10,21 @@ model_list:
 
   - model_name: llama3.1-8b
     litellm_params:
-      model: ollama_chat/llama3.1:8b
-      api_base: http://ollama:11434
+      model: ollama_chat/llama3.1
+      api_base: os.environ/OLLAMA_API_BASE
+      num_ctx: 8192
 
   - model_name: qwen2.5-7b
     litellm_params:
       model: ollama_chat/qwen2.5:7b
-      api_base: http://ollama:11434
+      api_base: os.environ/OLLAMA_API_BASE
+      num_ctx: 8192
 
   - model_name: gemma3-4b
     litellm_params:
       model: ollama_chat/gemma3:4b
-      api_base: http://ollama:11434
+      api_base: os.environ/OLLAMA_API_BASE
+      num_ctx: 8192
 
 litellm_settings:
   drop_params: true

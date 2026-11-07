@@ -135,14 +135,20 @@ flowchart LR
     W[Open WebUI<br/>optional] --> G
     B[benchmark] --> G
     A -->|OpenAI API| G[LiteLLM gateway<br/>:4000]
-    G --> O[Ollama<br/>CPU or GPU]
+    G --> O[Ollama<br/>GPU server via SSH tunnel<br/>or local container]
     G -.->|GPU override| V[vLLM]
 ```
 
+The gateway can use **any Ollama server**, set by `OLLAMA_API_BASE` in `.env`.
+By default it is a remote GPU server reached through an SSH tunnel on the
+host, so nothing heavy runs locally:
+
 ```bash
 cp .env.example .env                               # set LITELLM_MASTER_KEY
-docker compose up -d ollama litellm
-docker compose exec ollama ollama pull llama3.1:8b # + qwen2.5:7b, gemma3:4b for the benchmark
+ssh -N -L 18080:localhost:11434 <user>@<gpu-server> # keep this terminal open
+
+docker compose up -d litellm
+curl -H "Authorization: Bearer $LITELLM_MASTER_KEY" http://localhost:4000/v1/models
 
 # Build the knowledge base inside the app container (PDFs from sources/pdf/)
 docker compose run --rm app python prepare_sources.py
@@ -152,9 +158,17 @@ docker compose up -d                               # http://localhost:8000
 docker compose --profile ui up -d                  # + Open WebUI on http://localhost:3000
 ```
 
+**Local Ollama instead of a server:** set `OLLAMA_API_BASE=http://ollama:11434`,
+then `docker compose --profile local-ollama up -d` and
+`docker compose exec ollama ollama pull llama3.1`.
+
+The models listed in [`deploy/litellm.yaml`](deploy/litellm.yaml) must exist on
+that Ollama server (`ollama list`). `num_ctx: 8192` is sent with every request,
+so the server's default context window cannot truncate the RAG prompt.
+
 | Service | Image | Purpose |
 |---|---|---|
-| `ollama` | `ollama/ollama` | Model engine; context raised to 8192 tokens via `OLLAMA_CONTEXT_LENGTH` |
+| `ollama` | `ollama/ollama` | Optional local model engine (`--profile local-ollama`) |
 | `litellm` | `ghcr.io/berriai/litellm` | One OpenAI-compatible API and key for every model |
 | `app` | built from `Dockerfile` | The chatbot (non-root, CPU-only PyTorch for the embeddings) |
 | `open-webui` | `ghcr.io/open-webui/open-webui` | Optional general chat UI on the same gateway (`--profile ui`) |
@@ -164,7 +178,8 @@ server (`Qwen2.5-7B-Instruct`) behind the same gateway as `qwen2.5-7b-vllm`.
 It needs the NVIDIA driver and `nvidia-container-toolkit`:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+# with OLLAMA_API_BASE=http://ollama:11434 in .env
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml --profile local-ollama up -d
 ```
 
 Without Docker, nothing changes: `LLM_PROVIDER=ollama` (the default) talks to
@@ -180,8 +195,8 @@ prompt), so differences come from the model alone.
 ```bash
 pip install -r requirements.txt
 python -m benchmark.run_benchmark \
-    --models llama3.1-8b=llama3.1:8b,qwen2.5-7b=qwen2.5:7b,gemma3-4b=gemma3:4b \
-    --api-key "$LITELLM_MASTER_KEY" --ollama-url http://localhost:11434 --repeats 3
+    --models llama3.1-8b=llama3.1,qwen2.5-7b=qwen2.5:7b,gemma3-4b=gemma3:4b \
+    --api-key "$LITELLM_MASTER_KEY" --ollama-url http://localhost:18080 --repeats 3
 ```
 
 It measures per model:

@@ -1,8 +1,14 @@
-# THB StudentAssist: app + LiteLLM gateway + Ollama (CPU or GPU).
+# THB StudentAssist: app + LiteLLM gateway, in front of an Ollama server.
 #
-#   docker compose up -d                     # app on http://localhost:8000
+# Which Ollama is used is set by OLLAMA_API_BASE (in .env):
+#   remote server through an SSH tunnel on the host (default):
+#     ssh -L 18080:localhost:11434 <user>@<server>   then   docker compose up -d
+#   local Ollama container instead:
+#     OLLAMA_API_BASE=http://ollama:11434   and   docker compose --profile local-ollama up -d
+#
 #   docker compose --profile ui up -d        # + Open WebUI on http://localhost:3000
-#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d   # + vLLM (NVIDIA)
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml --profile local-ollama up -d
+#                                            # local GPU: Ollama on the GPU + vLLM (NVIDIA)
 #
 # See the "Docker" section of README.md for the first-time setup.
 
@@ -12,6 +18,7 @@ x-litellm-key: &litellm-key ${LITELLM_MASTER_KEY:-sk-local-dev-change-me}
 
 services:
   ollama:
+    profiles: ["local-ollama"]
     image: ollama/ollama:0.40.11
     environment:
       OLLAMA_CONTEXT_LENGTH: "8192"   # default is smaller and silently truncates RAG prompts
@@ -30,6 +37,9 @@ services:
     command: ["--config", "/app/config.yaml", "--port", "4000"]
     environment:
       LITELLM_MASTER_KEY: *litellm-key
+      OLLAMA_API_BASE: ${OLLAMA_API_BASE:-http://host.docker.internal:18080}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # built in on Docker Desktop; needed on Linux
     volumes:
       - ./deploy/litellm.yaml:/app/config.yaml:ro
     ports:
@@ -37,6 +47,7 @@ services:
     depends_on:
       ollama:
         condition: service_healthy
+        required: false               # only started with --profile local-ollama
     restart: unless-stopped
 
   app:
