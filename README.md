@@ -7,6 +7,8 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
 ![LangChain](https://img.shields.io/badge/LangChain-1C3C3C?logo=langchain&logoColor=white)
 ![Ollama](https://img.shields.io/badge/LLM-Ollama%20%7C%20Llama%203.1-black)
+![LiteLLM](https://img.shields.io/badge/gateway-LiteLLM-6E56CF)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 > **Disclaimer:** This is an independent student project. It is not affiliated with or endorsed by the Technische Hochschule Brandenburg. Always verify deadlines and fees on the official THB website.
@@ -120,6 +122,88 @@ uvicorn app:app --reload       # open http://127.0.0.1:8000
 python chatbot.py              # or chat in the terminal
 ```
 
+## Docker: app + LiteLLM gateway + Ollama
+
+`docker-compose.yml` runs the full stack. The app no longer talks to a model
+engine directly: it calls an OpenAI-compatible **LiteLLM** gateway, which routes
+each model name to the engine that serves it. Swapping or adding a model is a
+change to [`deploy/litellm.yaml`](deploy/litellm.yaml), not to the code.
+
+```mermaid
+flowchart LR
+    U[Browser] --> A[app<br/>FastAPI + RAG]
+    W[Open WebUI<br/>optional] --> G
+    B[benchmark] --> G
+    A -->|OpenAI API| G[LiteLLM gateway<br/>:4000]
+    G --> O[Ollama<br/>CPU or GPU]
+    G -.->|GPU override| V[vLLM]
+```
+
+```bash
+cp .env.example .env                               # set LITELLM_MASTER_KEY
+docker compose up -d ollama litellm
+docker compose exec ollama ollama pull llama3.1:8b # + qwen2.5:7b, gemma3:4b for the benchmark
+
+# Build the knowledge base inside the app container (PDFs from sources/pdf/)
+docker compose run --rm app python prepare_sources.py
+docker compose run --rm app python ingest.py
+
+docker compose up -d                               # http://localhost:8000
+docker compose --profile ui up -d                  # + Open WebUI on http://localhost:3000
+```
+
+| Service | Image | Purpose |
+|---|---|---|
+| `ollama` | `ollama/ollama` | Model engine; context raised to 8192 tokens via `OLLAMA_CONTEXT_LENGTH` |
+| `litellm` | `ghcr.io/berriai/litellm` | One OpenAI-compatible API and key for every model |
+| `app` | built from `Dockerfile` | The chatbot (non-root, CPU-only PyTorch for the embeddings) |
+| `open-webui` | `ghcr.io/open-webui/open-webui` | Optional general chat UI on the same gateway (`--profile ui`) |
+
+**NVIDIA GPU:** `docker-compose.gpu.yml` gives Ollama the GPU and adds a **vLLM**
+server (`Qwen2.5-7B-Instruct`) behind the same gateway as `qwen2.5-7b-vllm`.
+It needs the NVIDIA driver and `nvidia-container-toolkit`:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+```
+
+Without Docker, nothing changes: `LLM_PROVIDER=ollama` (the default) talks to
+Ollama directly, as before.
+
+## Benchmark: which model fits this task?
+
+[`benchmark/run_benchmark.py`](benchmark/run_benchmark.py) compares models on
+the real StudentAssist task instead of a generic leaderboard. Every model gets
+exactly the same prompt per question (same retrieved sources, same system
+prompt), so differences come from the model alone.
+
+```bash
+pip install -r requirements.txt
+python -m benchmark.run_benchmark \
+    --models llama3.1-8b=llama3.1:8b,qwen2.5-7b=qwen2.5:7b,gemma3-4b=gemma3:4b \
+    --api-key "$LITELLM_MASTER_KEY" --ollama-url http://localhost:11434 --repeats 3
+```
+
+It measures per model:
+
+| Metric | How |
+|---|---|
+| **Quality** | Share of passed checks per answer (below), averaged |
+| Says "don't know" | On questions the sources cannot answer, the model must give the fixed fallback and cite nothing |
+| Cites sources | Answerable questions must cite at least one source, and never a source number that does not exist |
+| Right language | German, English or Arabic, matching the question |
+| TTFT / latency / tokens/s | Time to first token, total time, generation speed (median, streamed) |
+| Memory | RAM/VRAM of the loaded model, read from Ollama's `/api/ps` |
+
+The first request per model loads it and is never measured. Results go to
+`benchmark/results/<timestamp>.md` (table) and `.jsonl` (every answer, for
+inspection).
+
+The question set ([`benchmark/questions.jsonl`](benchmark/questions.jsonl))
+covers all three languages. The `fallback` questions assume the topic is not in
+the indexed sources; check that this still holds when you add sources. Add
+`keywords` to a question to also require facts from the official answer.
+
 ## Adding sources
 
 Add an entry to `sources/metadata/sources.json` (`type`: `web` or `pdf`), then rerun steps 4 and 5. `ingest.py` is incremental: it only re-embeds changed files and removes their outdated chunks first.
@@ -140,7 +224,7 @@ Notable decisions in the retrieval pipeline:
 | `POST` | `/ask/stream` | `{"question": "..."}` → NDJSON stream of `token` events, then `done` with sources |
 | `POST` | `/ask` | Same, as a single JSON response `{answer, sources}` |
 | `POST` | `/clear` | Clear the conversation history of the current session |
-| `GET` | `/health` | Liveness check; also reports whether Ollama is reachable |
+| `GET` | `/health` | Liveness check; also reports whether the LLM backend is reachable |
 | `GET` | `/pdf/{file}` | Serves source PDFs so citations can link to a page |
 
 ## Configuration
@@ -149,8 +233,10 @@ All settings are environment variables (see [`.env.example`](.env.example)):
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `OLLAMA_BASE_URL` | `http://localhost:18080` | Ollama server |
-| `OLLAMA_MODEL` | `llama3.1` | Chat model |
+| `LLM_PROVIDER` | `ollama` | `ollama` (direct) or `openai` (LiteLLM, vLLM or any OpenAI-compatible API) |
+| `OLLAMA_BASE_URL` | `http://localhost:18080` | Ollama server (`ollama` provider) |
+| `OLLAMA_MODEL` | `llama3.1` | Chat model (`ollama` provider) |
+| `LLM_BASE_URL` / `LLM_MODEL` / `LLM_API_KEY` | `http://localhost:4000/v1` / `llama3.1-8b` / – | Endpoint, model name and key (`openai` provider) |
 | `EMBEDDING_MODEL` | multilingual MiniLM | e.g. `intfloat/multilingual-e5-small` for longer inputs (re-ingest required) |
 | `TOP_K` | `8` | Chunks given to the LLM |
 | `MAX_HISTORY_TURNS` | `6` | Conversation turns kept per session |
@@ -167,8 +253,14 @@ All settings are environment variables (see [`.env.example`](.env.example)):
 ├── prepare_sources.py   Fetching and cleaning of web pages and PDFs
 ├── check_db.py          Inspect the index and test queries
 ├── config.py            Settings from environment / .env
+├── llm_backend.py       Chat model factory: Ollama or OpenAI-compatible (LiteLLM / vLLM)
 ├── templates/index.html Chat UI
 ├── sources/metadata/    Source definitions
+├── benchmark/           Model benchmark: question set, runner, scoring
+├── deploy/              LiteLLM gateway configs (CPU and GPU)
+├── Dockerfile           App image
+├── docker-compose.yml   app + LiteLLM + Ollama (+ Open WebUI)
+├── docker-compose.gpu.yml  NVIDIA override: GPU for Ollama + vLLM
 └── tests/               Unit tests (pytest)
 ```
 
@@ -181,10 +273,12 @@ pytest
 
 ## Roadmap
 
-- Evaluation set of real student questions with expected sources
-- More sources (fees, international office, other departments)
-- Stronger embedding model or a cross-encoder re-ranker
-- Docker Compose setup (app + Ollama)
+- [x] Docker Compose setup (app + LiteLLM gateway + Ollama, optional vLLM on GPU)
+- [x] Model benchmark on the real task (quality, latency, memory)
+- [ ] Grow the question set with real student questions and expected keywords
+- [ ] Monitoring: Prometheus metrics from LiteLLM / vLLM and a Grafana dashboard
+- [ ] More sources (fees, international office, other departments)
+- [ ] Stronger embedding model or a cross-encoder re-ranker
 
 ## License
 

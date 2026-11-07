@@ -21,6 +21,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 import config
+import llm_backend
 from chatbot import LLMUnavailableError, answer_question, clear_history, stream_answer
 
 logger = logging.getLogger("app")
@@ -149,10 +150,11 @@ async def clear(request: Request):
 
 @app.get("/health")
 async def health():
-    """Liveness + whether the Ollama backend is reachable."""
+    """Liveness + whether the LLM backend (Ollama or OpenAI-compatible) is reachable."""
+    url, headers = llm_backend.health_request()
     try:
         async with httpx.AsyncClient(timeout=2) as client:
-            r = await client.get(f"{config.OLLAMA_BASE_URL}/api/tags")
+            r = await client.get(url, headers=headers)
             llm_ok = r.status_code == 200
     except httpx.HTTPError:
         llm_ok = False

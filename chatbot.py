@@ -16,9 +16,9 @@ from urllib.parse import quote
 
 from langchain_core.documents import Document
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
-from langchain_ollama import ChatOllama
 
 import config
+import llm_backend
 from embeddings import get_vectorstore
 from retrieval import HybridRetriever, tokenize
 
@@ -27,19 +27,15 @@ logger = logging.getLogger("chatbot")
 
 
 class LLMUnavailableError(RuntimeError):
-    """Raised when the Ollama server cannot be reached or fails."""
+    """Raised when the LLM backend cannot be reached or fails."""
 
 
 # ── Models (loaded once) ──────────────────────────────────────────────────────
 
 retriever = HybridRetriever(get_vectorstore())
 
-llm = ChatOllama(
-    model=config.OLLAMA_MODEL,
-    base_url=config.OLLAMA_BASE_URL,
-    temperature=config.LLM_TEMPERATURE,
-    num_ctx=config.LLM_NUM_CTX,
-)
+llm = llm_backend.make_llm()
+logger.info("LLM backend: %s", llm_backend.describe())
 
 
 # ── Session store (bounded, expiring) ─────────────────────────────────────────
@@ -289,7 +285,7 @@ if __name__ == "__main__":
         try:
             result = answer_question(question, session_id=session)
         except LLMUnavailableError as exc:
-            print(f"\n[Error] LLM not reachable at {config.OLLAMA_BASE_URL}: {exc}\n")
+            print(f"\n[Error] LLM not reachable ({llm_backend.describe()}): {exc}\n")
             continue
 
         print("\nTHB StudentAssist:")

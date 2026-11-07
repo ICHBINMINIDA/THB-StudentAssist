@@ -29,8 +29,14 @@ COLLECTION_NAME = os.getenv("COLLECTION_NAME", "thb_studentassist")
 EMBEDDING_MODEL = os.getenv(
     "EMBEDDING_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 )
+# "ollama": talk to Ollama directly. "openai": any OpenAI-compatible endpoint
+# (LiteLLM gateway, vLLM, ...). See llm_backend.py and docker-compose.yml.
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "ollama").strip().lower()
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:18080")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1")
+LLM_BASE_URL = os.getenv("LLM_BASE_URL", "http://localhost:4000/v1")
+LLM_MODEL = os.getenv("LLM_MODEL", "llama3.1-8b")  # model name as exposed by the gateway
+LLM_API_KEY = os.getenv("LLM_API_KEY", "")
 LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.2"))
 # Ollama defaults to a 2048-token context window and silently truncates the
 # prompt beyond that. Our prompt (instructions + 6 chunks + history) is larger.

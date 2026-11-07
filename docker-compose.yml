@@ -1,0 +1,81 @@
+# THB StudentAssist: app + LiteLLM gateway + Ollama (CPU or GPU).
+#
+#   docker compose up -d                     # app on http://localhost:8000
+#   docker compose --profile ui up -d        # + Open WebUI on http://localhost:3000
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d   # + vLLM (NVIDIA)
+#
+# See the "Docker" section of README.md for the first-time setup.
+
+name: thb-studentassist
+
+x-litellm-key: &litellm-key ${LITELLM_MASTER_KEY:-sk-local-dev-change-me}
+
+services:
+  ollama:
+    image: ollama/ollama:0.40.11
+    environment:
+      OLLAMA_CONTEXT_LENGTH: "8192"   # default is smaller and silently truncates RAG prompts
+      OLLAMA_KEEP_ALIVE: 30m
+    volumes:
+      - ollama:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  litellm:
+    image: ghcr.io/berriai/litellm:v1.106.3
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    environment:
+      LITELLM_MASTER_KEY: *litellm-key
+    volumes:
+      - ./deploy/litellm.yaml:/app/config.yaml:ro
+    ports:
+      - "4000:4000"                   # OpenAI-compatible API, also used by the benchmark
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: unless-stopped
+
+  app:
+    build: .
+    environment:
+      LLM_PROVIDER: openai
+      LLM_BASE_URL: http://litellm:4000/v1
+      LLM_API_KEY: *litellm-key
+      LLM_MODEL: ${LLM_MODEL:-llama3.1-8b}
+      ANONYMIZED_TELEMETRY: "False"
+    volumes:
+      - vectorstore:/app/vectorstore
+      - clean_documents:/app/clean_documents
+      - ./sources/pdf:/app/sources/pdf:ro
+      - hf-cache:/home/app/.cache/huggingface
+    ports:
+      - "8000:8000"
+    depends_on:
+      - litellm
+    restart: unless-stopped
+
+  open-webui:
+    profiles: ["ui"]
+    image: ghcr.io/open-webui/open-webui:v0.12.3
+    environment:
+      OPENAI_API_BASE_URL: http://litellm:4000/v1
+      OPENAI_API_KEY: *litellm-key
+      ENABLE_OLLAMA_API: "false"      # every model goes through the gateway
+    volumes:
+      - open-webui:/app/backend/data
+    ports:
+      - "3000:8080"
+    depends_on:
+      - litellm
+    restart: unless-stopped
+
+volumes:
+  ollama:
+  vectorstore:
+  clean_documents:
+  hf-cache:
+  open-webui:
