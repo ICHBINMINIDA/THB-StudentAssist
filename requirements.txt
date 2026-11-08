@@ -12,6 +12,7 @@ langchain-core==0.3.86
 langchain-chroma==0.2.3
 langchain-huggingface==0.2.0
 langchain-ollama==0.3.3
+langchain-openai==0.3.35
 langchain-text-splitters==0.3.11
 chromadb==0.6.3
 sentence-transformers==5.4.1

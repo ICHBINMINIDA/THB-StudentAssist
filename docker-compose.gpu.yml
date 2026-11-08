@@ -1,0 +1,48 @@
+# NVIDIA GPU override: gives Ollama the GPU and adds a vLLM server behind the
+# same LiteLLM gateway. Requires the NVIDIA driver and nvidia-container-toolkit.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml --profile local-ollama up -d
+#   (with OLLAMA_API_BASE=http://ollama:11434 in .env)
+#
+# Qwen2.5-7B-Instruct in bf16 needs ~16 GB of VRAM. On a smaller GPU use a
+# quantized model (e.g. Qwen/Qwen2.5-7B-Instruct-AWQ) or lower --max-model-len.
+
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  vllm:
+    image: vllm/vllm-openai:v0.32.0
+    command:
+      - --model=Qwen/Qwen2.5-7B-Instruct
+      - --max-model-len=8192
+      - --gpu-memory-utilization=0.85
+    environment:
+      HF_TOKEN: ${HF_TOKEN:-}
+    volumes:
+      - hf-models:/root/.cache/huggingface
+    ipc: host
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  litellm:
+    volumes:
+      - ./deploy/litellm.gpu.yaml:/app/config.yaml:ro
+    depends_on:
+      vllm:
+        condition: service_started
+
+volumes:
+  hf-models:

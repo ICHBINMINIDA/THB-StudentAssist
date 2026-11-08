@@ -1,0 +1,14 @@
+{"id": "rueckmeldung-de", "question": "Wann und wie muss ich mich für das nächste Semester zurückmelden?", "lang": "de", "expect": "answer", "keywords": []}
+{"id": "rueckmeldung-en", "question": "How do I re-register for the next semester?", "lang": "en", "expect": "answer", "keywords": []}
+{"id": "pruefung-abmelden-de", "question": "Wie kann ich mich von einer Prüfung abmelden?", "lang": "de", "expect": "answer", "keywords": []}
+{"id": "freiversuch-en", "question": "What is a Freiversuch and when can I use it?", "lang": "en", "expect": "answer", "keywords": []}
+{"id": "exmatrikulation-de", "question": "Muss ich mich nach der letzten Prüfung exmatrikulieren?", "lang": "de", "expect": "answer", "keywords": []}
+{"id": "semesterticket-en", "question": "Can I get a refund for the Semesterticket?", "lang": "en", "expect": "answer", "keywords": []}
+{"id": "datenbanken-ects-de", "question": "Wie viele ECTS hat das Modul Datenbanken?", "lang": "de", "expect": "answer", "keywords": []}
+{"id": "vorlesungszeit-de", "question": "Wann beginnt die Vorlesungszeit im nächsten Semester?", "lang": "de", "expect": "answer", "keywords": []}
+{"id": "studiengaenge-ar", "question": "ما هي برامج الدراسة المتاحة في قسم علوم الحاسوب؟", "lang": "ar", "expect": "answer", "keywords": []}
+{"id": "pruefung-abmelden-ar", "question": "كيف ألغي تسجيلي في امتحان؟", "lang": "ar", "expect": "answer", "keywords": []}
+{"id": "wlan-passwort-de", "question": "Wie lautet das WLAN-Passwort in der Bibliothek?", "lang": "de", "expect": "fallback"}
+{"id": "wohnheim-miete-en", "question": "How much is the rent in the student dormitory on campus?", "lang": "en", "expect": "fallback"}
+{"id": "parkplatz-de", "question": "Wie viel kostet ein Parkausweis für Studierende?", "lang": "de", "expect": "fallback"}
+{"id": "mensa-ar", "question": "ما هي قائمة الطعام في المطعم الجامعي يوم الجمعة؟", "lang": "ar", "expect": "fallback"}

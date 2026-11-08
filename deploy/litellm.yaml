@@ -1,0 +1,47 @@
+# LiteLLM gateway: one OpenAI-compatible API in front of every model.
+# The app and the benchmark only know the model_name on the left; which engine
+# serves it (Ollama here, vLLM in litellm.gpu.yaml) is decided in this file.
+#
+# OLLAMA_API_BASE (set in docker-compose.yml / .env) decides WHICH Ollama:
+#   http://host.docker.internal:18080   remote server via SSH tunnel (default)
+#   http://ollama:11434                 local container (--profile local-ollama)
+#
+# A model must exist on that Ollama server (`ollama list`), e.g.:
+#   ollama pull llama3.1 / gemma3:4b / gemma3:12b / gemma3:27b
+# num_ctx is sent with every request, so a server's smaller default context
+# window cannot silently truncate the RAG prompt.
+#
+# The gemma3 entries form a size ladder (4B -> 12B -> 27B) for the benchmark:
+# same model family, so differences come from model size alone.
+
+model_list:
+  - model_name: llama3.1-8b
+    litellm_params:
+      model: ollama_chat/llama3.1
+      api_base: os.environ/OLLAMA_API_BASE
+      num_ctx: 8192
+
+  - model_name: gemma3-4b
+    litellm_params:
+      model: ollama_chat/gemma3:4b
+      api_base: os.environ/OLLAMA_API_BASE
+      num_ctx: 8192
+
+  - model_name: gemma3-12b
+    litellm_params:
+      model: ollama_chat/gemma3:12b
+      api_base: os.environ/OLLAMA_API_BASE
+      num_ctx: 8192
+
+  - model_name: gemma3-27b
+    litellm_params:
+      model: ollama_chat/gemma3:27b
+      api_base: os.environ/OLLAMA_API_BASE
+      num_ctx: 8192
+
+litellm_settings:
+  drop_params: true        # ignore OpenAI parameters a backend does not support
+  request_timeout: 300
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
