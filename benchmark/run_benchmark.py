@@ -8,11 +8,11 @@ from docker-compose.yml, so Ollama and vLLM models can be compared side by side.
 
 Usage (vector store must exist, see README):
 
-    python -m benchmark.run_benchmark --models llama3.1-8b,qwen2.5-7b,gemma3-4b
+    python -m benchmark.run_benchmark --models gemma3-4b,gemma3-12b,llama3.1-8b
 
     # also record memory use from Ollama: alias=ollama_tag
     python -m benchmark.run_benchmark \
-        --models llama3.1-8b=llama3.1:8b,qwen2.5-7b=qwen2.5:7b \
+        --models gemma3-4b=gemma3:4b,gemma3-12b=gemma3:12b \
         --ollama-url http://localhost:11434
 
 Results are written to benchmark/results/<timestamp>.jsonl (raw) and .md (table).

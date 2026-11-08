@@ -56,7 +56,7 @@ services:
       LLM_PROVIDER: openai
       LLM_BASE_URL: http://litellm:4000/v1
       LLM_API_KEY: *litellm-key
-      LLM_MODEL: ${LLM_MODEL:-llama3.1-8b}
+      LLM_MODEL: ${LLM_MODEL:-gemma3-4b}
       ANONYMIZED_TELEMETRY: "False"
     volumes:
       - vectorstore:/app/vectorstore

@@ -33,9 +33,9 @@ EMBEDDING_MODEL = os.getenv(
 # (LiteLLM gateway, vLLM, ...). See llm_backend.py and docker-compose.yml.
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "ollama").strip().lower()
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:18080")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemma3:4b")
 LLM_BASE_URL = os.getenv("LLM_BASE_URL", "http://localhost:4000/v1")
-LLM_MODEL = os.getenv("LLM_MODEL", "llama3.1-8b")  # model name as exposed by the gateway
+LLM_MODEL = os.getenv("LLM_MODEL", "gemma3-4b")  # model name as exposed by the gateway
 LLM_API_KEY = os.getenv("LLM_API_KEY", "")
 LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.2"))
 # Ollama defaults to a 2048-token context window and silently truncates the

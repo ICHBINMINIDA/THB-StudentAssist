@@ -6,7 +6,7 @@
 ![Python](https://img.shields.io/badge/python-3.10+-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
 ![LangChain](https://img.shields.io/badge/LangChain-1C3C3C?logo=langchain&logoColor=white)
-![Ollama](https://img.shields.io/badge/LLM-Ollama%20%7C%20Llama%203.1-black)
+![Ollama](https://img.shields.io/badge/LLM-Ollama%20%7C%20Gemma%203%204B-black)
 ![LiteLLM](https://img.shields.io/badge/gateway-LiteLLM-6E56CF)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -38,7 +38,7 @@
 - **Understands follow-ups.** "Wie viele ECTS hat Datenbanken?" followed by "und wie viele SWS?" still finds the right module.
 - **Hybrid search.** Semantic vector search combined with BM25 keyword search, so it handles both paraphrases and exact terms (module names, "ECTS", dates).
 - **Streaming chat UI.** Answers appear token by token, with Markdown rendering, dark mode, a mobile layout and suggested questions.
-- **Runs locally.** Llama 3.1 via Ollama and on-device embeddings; no API keys, no data leaves the machine.
+- **Runs locally.** Gemma 3 (4B) via Ollama, chosen with the [benchmark](#results-november-2026), and on-device embeddings; no API keys, no data leaves the machine.
 
 ## Architecture
 
@@ -54,14 +54,14 @@ flowchart LR
     subgraph Online["Per question"]
         Q[Student question<br/>+ chat history] --> R[Hybrid retriever<br/>vector + BM25 → RRF]
         V --> R
-        R --> L[Prompt with numbered sources<br/>Llama 3.1 via Ollama]
+        R --> L[Prompt with numbered sources<br/>Gemma 3 4B via Ollama]
         L --> A[Streamed answer<br/>+ cited sources]
     end
 ```
 
 | Layer | Technology |
 |---|---|
-| LLM | Llama 3.1 (8B) served by [Ollama](https://ollama.com) |
+| LLM | Gemma 3 (4B) served by [Ollama](https://ollama.com), chosen with the [benchmark](#results-november-2026) |
 | Embeddings | `paraphrase-multilingual-MiniLM-L12-v2` (sentence-transformers) |
 | Vector store | Chroma |
 | Keyword search | Own BM25 implementation, fused with Reciprocal Rank Fusion |
@@ -84,7 +84,7 @@ cd THB-StudentAssist
 python -m venv venv
 venv\Scripts\activate          # macOS/Linux: source venv/bin/activate
 pip install -r requirements.txt
-ollama pull llama3.1
+ollama pull gemma3:4b
 ```
 
 ### 2. Configure
@@ -160,7 +160,7 @@ docker compose --profile ui up -d                  # + Open WebUI on http://loca
 
 **Local Ollama instead of a server:** set `OLLAMA_API_BASE=http://ollama:11434`,
 then `docker compose --profile local-ollama up -d` and
-`docker compose exec ollama ollama pull llama3.1`.
+`docker compose exec ollama ollama pull gemma3:4b`.
 
 The models listed in [`deploy/litellm.yaml`](deploy/litellm.yaml) must exist on
 that Ollama server (`ollama list`). `num_ctx: 8192` is sent with every request,
@@ -252,6 +252,8 @@ What this shows:
   step: evaluate retrieval separately and try a stronger multilingual
   embedding model.
 
+Based on these results the default model is now **gemma3:4b** (it was llama3.1:8b).
+
 Limitations: 14 questions is a small set, quality is checked automatically
 (citations, refusal, language) rather than graded against reference answers,
 and latency depends on the load of the shared server. The refusal check is
@@ -289,8 +291,8 @@ All settings are environment variables (see [`.env.example`](.env.example)):
 |---|---|---|
 | `LLM_PROVIDER` | `ollama` | `ollama` (direct) or `openai` (LiteLLM, vLLM or any OpenAI-compatible API) |
 | `OLLAMA_BASE_URL` | `http://localhost:18080` | Ollama server (`ollama` provider) |
-| `OLLAMA_MODEL` | `llama3.1` | Chat model (`ollama` provider) |
-| `LLM_BASE_URL` / `LLM_MODEL` / `LLM_API_KEY` | `http://localhost:4000/v1` / `llama3.1-8b` / – | Endpoint, model name and key (`openai` provider) |
+| `OLLAMA_MODEL` | `gemma3:4b` | Chat model (`ollama` provider) |
+| `LLM_BASE_URL` / `LLM_MODEL` / `LLM_API_KEY` | `http://localhost:4000/v1` / `gemma3-4b` / – | Endpoint, model name and key (`openai` provider) |
 | `EMBEDDING_MODEL` | multilingual MiniLM | e.g. `intfloat/multilingual-e5-small` for longer inputs (re-ingest required) |
 | `TOP_K` | `8` | Chunks given to the LLM |
 | `MAX_HISTORY_TURNS` | `6` | Conversation turns kept per session |
