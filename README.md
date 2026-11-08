@@ -219,6 +219,45 @@ covers all three languages. The `fallback` questions assume the topic is not in
 the indexed sources; check that this still holds when you add sources. Add
 `keywords` to a question to also require facts from the official answer.
 
+### Results (November 2026)
+
+14 questions × 3 repeats per model, served by Ollama on a shared lab GPU server
+through the LiteLLM gateway ([full table](benchmark/results/20261107-235231.md)):
+
+| Model | Quality | Says "don't know" | Cites sources | TTFT | Latency | Tokens/s | VRAM |
+|---|---|---|---|---|---|---|---|
+| gemma3:12b | **0.93** | 1.00 | 0.80 | 0.41 s | 2.37 s | 82 | 7.8 GB |
+| gemma3:4b | 0.91 | 1.00 | 0.80 | 0.22 s | 0.92 s | **180** | **2.8 GB** |
+| gemma3:27b | 0.86 | 1.00 | 0.60 | 0.57 s | 3.19 s | 43 | 16.7 GB |
+| llama3.1:8b (previous default) | 0.83 | 0.92 | 0.57 | **0.07 s** | **0.61 s** | 146 | 5.3 GB |
+
+What this shows:
+
+- **Bigger is not better for this task.** gemma3:27b uses 6× the memory of
+  gemma3:4b and scores lower: it is over-cautious and answers "don't know" to
+  questions the sources do answer (re-registration, lecture dates). With grounded
+  RAG prompts, the larger model's extra knowledge does not help, but its caution
+  costs answers.
+- **gemma3:4b is the best trade-off.** It scores within 0.02 of the best model
+  at 2.6× its speed and a third of its memory. On a shared GPU that means more
+  users per card, or room for other models.
+- **llama3.1:8b, the previous default, scores lowest.** It is the fastest to
+  start answering, but cites sources least often and falls back to "don't know"
+  for both Arabic questions.
+- **Two questions fail for every model, which points to retrieval, not the
+  LLM.** The handbook contains a "Datenbanken" module, but its chunk is not
+  retrieved for "Wie viele ECTS hat das Modul Datenbanken?"; and the Arabic
+  question about study programs fails for all models, a sign that
+  cross-lingual retrieval (Arabic question, German documents) is weak. Next
+  step: evaluate retrieval separately and try a stronger multilingual
+  embedding model.
+
+Limitations: 14 questions is a small set, quality is checked automatically
+(citations, refusal, language) rather than graded against reference answers,
+and latency depends on the load of the shared server. The refusal check is
+strict: llama3.1 once paraphrased the required fallback sentence, which the app
+itself would also not recognise as a refusal.
+
 ## Adding sources
 
 Add an entry to `sources/metadata/sources.json` (`type`: `web` or `pdf`), then rerun steps 4 and 5. `ingest.py` is incremental: it only re-embeds changed files and removes their outdated chunks first.
@@ -290,6 +329,7 @@ pytest
 
 - [x] Docker Compose setup (app + LiteLLM gateway + Ollama, optional vLLM on GPU)
 - [x] Model benchmark on the real task (quality, latency, memory)
+- [ ] Retrieval evaluation: the benchmark found questions no model can answer because the right chunk is not retrieved (module lookups, Arabic questions)
 - [ ] Grow the question set with real student questions and expected keywords
 - [ ] Monitoring: Prometheus metrics from LiteLLM / vLLM and a Grafana dashboard
 - [ ] More sources (fees, international office, other departments)
